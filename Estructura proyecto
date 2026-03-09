@@ -1,0 +1,19 @@
+sistema-salud-sexual-reproductiva
+│
+├── docs
+│   ├── requerimientos.md
+│   ├── historias_usuario.md
+│   ├── mvp.md
+│
+├── diagrams
+│   ├── casos_uso.png
+│   ├── diagrama_clases.png
+│
+├── src
+│   ├── Main.java
+│   ├── VentanaPrincipal.java
+│   ├── TestConocimiento.java
+│   ├── AnalizadorIA.java
+│   └── PlanEducativo.java
+│
+└── README.md
