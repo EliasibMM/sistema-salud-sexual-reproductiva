@@ -1,7 +1,7 @@
+import javax.swing.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class ProyectoSalud {
 
@@ -11,52 +11,65 @@ public class ProyectoSalud {
         String password = "TuContrasena123";
 
         try (Connection conexion = DriverManager.getConnection(url, user, password)) {
-            System.out.println("¡Conectado exitosamente a la base de datos!");
-            Scanner sc = new Scanner(System.in);
-            int opcion = 0;
+            JOptionPane.showMessageDialog(null, "¡Conexión Exitosa!\nBienvenido al Sistema de Apoyo Educativo", "SISTEMA PI", JOptionPane.INFORMATION_MESSAGE);
 
-            while (opcion != 4) {
-                System.out.println("\n=== SISTEMA DE APOYO EDUCATIVO (SPRINT 1) ===");
-                System.out.println("1. Consultar Métodos Anticonceptivos (HU1)");
-                System.out.println("2. Consultar Información sobre ITS (HU2)");
-                System.out.println("3. Realizar Test y Generar Plan (HU3, HU4, HU5)");
-                System.out.println("4. Salir");
-                System.out.print("Seleccione una opción: ");
-                opcion = sc.nextInt();
+            String[] opciones = {
+                    "Métodos Anticonceptivos (HU1)",
+                    "Información ITS (HU2)",
+                    "Realizar Test (HU3-5)",
+                    "Salir"
+            };
 
-                switch (opcion) {
-                    case 1: mostrarContenidos(conexion, "Metodo"); break;
-                    case 2: mostrarContenidos(conexion, "ITS"); break;
-                    case 3: realizarTest(conexion); break;
-                    case 4: System.out.println("Cerrando sistema..."); break;
-                    default: System.out.println("Opción no válida.");
+            int seleccion = 0;
+            while (seleccion != 3 && seleccion != -1) {
+                seleccion = JOptionPane.showOptionDialog(null,
+                        "Seleccione una categoría para consultar:",
+                        "MENÚ PRINCIPAL - SPRINT 1",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null, opciones, opciones[0]);
+
+                switch (seleccion) {
+                    case 0: mostrarContenidos(conexion, "Metodo"); break;
+                    case 1: mostrarContenidos(conexion, "ITS"); break;
+                    case 2: realizarTest(conexion); break;
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error de conexión: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Error de conexión: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     public static void mostrarContenidos(Connection conexion, String categoria) {
         String sql = "SELECT nombre, descripcion, prevencion FROM ContenidosEducativos WHERE tipo = ?";
+        StringBuilder reporte = new StringBuilder("--- INFORMACIÓN DE " + categoria.toUpperCase() + " ---\n\n");
+
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setString(1, categoria);
             ResultSet rs = pstmt.executeQuery();
+
             while (rs.next()) {
-                System.out.println("\n• " + rs.getString("nombre"));
-                System.out.println("  Detalle: " + rs.getString("descripcion"));
-                System.out.println("  Prevención: " + rs.getString("prevencion"));
-                System.out.println("------------------------------------------");
+                reporte.append("• ").append(rs.getString("nombre")).append("\n");
+                reporte.append("  Detalle: ").append(rs.getString("descripcion")).append("\n");
+                reporte.append("  Prevención: ").append(rs.getString("prevencion")).append("\n");
+                reporte.append("------------------------------------------\n");
             }
+
+            JTextArea textArea = new JTextArea(reporte.toString());
+            textArea.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new java.awt.Dimension(500, 400));
+
+            JOptionPane.showMessageDialog(null, scrollPane, "Contenidos Educativos", JOptionPane.PLAIN_MESSAGE);
+
         } catch (SQLException e) {
-            System.out.println("Error al mostrar contenidos: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Error al mostrar contenidos: " + e.getMessage());
         }
     }
 
     public static void realizarTest(Connection conexion) {
-        Scanner sc = new Scanner(System.in);
-        System.out.print("\nIngrese su nombre para el registro: ");
-        String nombreEstudiante = sc.next(); // Captura el nombre para evitar NULL [cite: 16]
+        String nombreEstudiante = JOptionPane.showInputDialog(null, "Ingrese su nombre para el registro:", "Identificación", JOptionPane.QUESTION_MESSAGE);
+        if (nombreEstudiante == null || nombreEstudiante.isEmpty()) return;
 
         String sql = "SELECT pregunta, opcion_a, opcion_b, opcion_c, correcta, categoria FROM TestConocimientos";
         List<String> temasAFortalecer = new ArrayList<>();
@@ -65,73 +78,62 @@ public class ProyectoSalud {
         try (Statement stmt = conexion.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
-            System.out.println("\n--- INICIO DEL TEST DE CONOCIMIENTOS ---");
             while (rs.next()) {
                 String categoriaPregunta = rs.getString("categoria");
                 String respuestaCorrecta = rs.getString("correcta").trim().toUpperCase();
 
-                System.out.println("\nPregunta: " + rs.getString("pregunta"));
-                // Salto de línea para cada opción (Mejora visual)
-                System.out.println("A) " + rs.getString("opcion_a"));
-                System.out.println("B) " + rs.getString("opcion_b"));
-                System.out.println("C) " + rs.getString("opcion_c"));
-                System.out.print("Tu respuesta: ");
-                String respUsuario = sc.next().toUpperCase();
+                String mensajePregunta = rs.getString("pregunta") + "\n\n" +
+                        "A) " + rs.getString("opcion_a") + "\n" +
+                        "B) " + rs.getString("opcion_b") + "\n" +
+                        "C) " + rs.getString("opcion_c");
 
-                // Feedback de respuesta correcta o incorrecta
-                if (respUsuario.equals(respuestaCorrecta)) {
-                    System.out.println(">> ¡CORRECTO!");
+                String respUsuario = JOptionPane.showInputDialog(null, mensajePregunta, "Test de Conocimientos", JOptionPane.QUESTION_MESSAGE);
+
+                if (respUsuario != null && respUsuario.toUpperCase().equals(respuestaCorrecta)) {
+                    JOptionPane.showMessageDialog(null, "¡CORRECTO!");
                     puntaje += 10;
                 } else {
-                    System.out.println(">> INCORRECTO. La respuesta correcta era: " + respuestaCorrecta);
-                    // HU4: Análisis de debilidad según la categoría real de la pregunta
+                    JOptionPane.showMessageDialog(null, "INCORRECTO.\nLa respuesta era: " + respuestaCorrecta);
                     if (!temasAFortalecer.contains(categoriaPregunta)) {
                         temasAFortalecer.add(categoriaPregunta);
                     }
                 }
             }
 
-            System.out.println("\n=========================================");
-            System.out.println("RESULTADO FINAL: " + puntaje + " puntos");
-
+            // Análisis Inteligente (HU4)
             String temasStr = temasAFortalecer.isEmpty() ? "Ninguno" : String.join(", ", temasAFortalecer);
             String recomendacionIA = temasAFortalecer.isEmpty() ?
                     "¡Excelente! Posees sólidos conocimientos." :
-                    "Debes reforzar: " + temasStr;
+                    "Tu análisis indica que debes reforzar: " + temasStr;
 
-            // Guardar en base de datos sin dejar campos NULL
+            JOptionPane.showMessageDialog(null, "RESULTADO FINAL: " + puntaje + " puntos\n\n" + recomendacionIA, "Análisis de la IA", JOptionPane.INFORMATION_MESSAGE);
+
             guardarResultado(conexion, nombreEstudiante, puntaje, recomendacionIA, temasStr);
 
-            // Generación del Plan Educativo Personalizado (HU5)
+            // Plan Educativo Personalizado (HU5)
             if (!temasAFortalecer.isEmpty()) {
-                System.out.println("\n=== TU PLAN EDUCATIVO PERSONALIZADO ===");
+                JOptionPane.showMessageDialog(null, "Generando tu ruta de aprendizaje basada en tus debilidades...", "Plan Personalizado", JOptionPane.INFORMATION_MESSAGE);
                 for (String tema : temasAFortalecer) {
-                    System.out.println("\nREFORZAMIENTO PARA EL TEMA: " + tema);
                     mostrarContenidos(conexion, tema);
                 }
             }
-            System.out.println("=========================================");
 
         } catch (SQLException e) {
-            System.out.println("Error en el test: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Error en el test: " + e.getMessage());
         }
     }
 
     public static void guardarResultado(Connection conexion, String nombre, int puntaje, String recIA, String temas) {
-        // Asegura que todas las columnas de tu tabla reciban datos
         String sql = "INSERT INTO ResultadosEstudiante (estudiante_nombre, puntaje, recomendacion_ia, fecha_realizacion, puntaje_obtenido, temas_reforzar) VALUES (?, ?, ?, GETDATE(), ?, ?)";
-
         try (PreparedStatement pstmt = conexion.prepareStatement(sql)) {
             pstmt.setString(1, nombre);
             pstmt.setInt(2, puntaje);
             pstmt.setString(3, recIA);
             pstmt.setInt(4, puntaje);
             pstmt.setString(5, temas);
-
             pstmt.executeUpdate();
-            System.out.println("\n[SISTEMA] Registro guardado en el historial exitosamente.");
         } catch (SQLException e) {
-            System.out.println("Error al guardar en BD: " + e.getMessage());
+            System.out.println("Error al guardar: " + e.getMessage());
         }
     }
 }
